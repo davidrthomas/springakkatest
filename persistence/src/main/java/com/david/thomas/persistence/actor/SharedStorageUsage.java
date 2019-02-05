@@ -3,6 +3,7 @@ package com.david.thomas.persistence.actor;
 import akka.actor.*;
 import akka.persistence.journal.leveldb.SharedLeveldbJournal;
 import akka.persistence.journal.leveldb.SharedLeveldbStore;
+import com.david.thomas.persistence.PersistenceAppConfiguration;
 
 import java.util.Optional;
 
@@ -19,6 +20,13 @@ public class SharedStorageUsage extends AbstractActor {
 
         store.tell(new Identify(1), getSelf());
     }
+
+/*    @Override
+    public void preStart() throws Exception {
+        String path = "akka.tcp://" + PersistenceAppConfiguration.ActorSystemName + "@127.0.0.1:2551/user/store";
+        ActorSelection selection = getContext().actorSelection(path);
+        selection.tell(new Identify(1), getSelf());
+    }*/
 
     @Override
     public Receive createReceive() {

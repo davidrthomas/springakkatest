@@ -18,6 +18,7 @@ public class MyEntityActor extends AbstractPersistentActor {
         return receiveBuilder()
                 .match(MyEntity.class, myEntity -> {
                     this.myEntity = myEntity;
+                    System.out.println(String.format("Recovering %s", myEntity.getName()));
                 })
                 .build();
     }
@@ -27,6 +28,7 @@ public class MyEntityActor extends AbstractPersistentActor {
         return receiveBuilder()
                 .match(MyEntity.class, myEntity -> {
                     persist(myEntity, (x) -> {
+                        System.out.println("received my entity command");
                         String prevValue = this.myEntity.getName();
                         this.myEntity = myEntity;
                         getSender().tell(prevValue, getSelf());
@@ -41,6 +43,7 @@ public class MyEntityActor extends AbstractPersistentActor {
     }
 
     public static class MyEntity implements Serializable {
+        private static final long serialVersionUID = 7465100161517213802L;
         private String name;
 
         public MyEntity() {
