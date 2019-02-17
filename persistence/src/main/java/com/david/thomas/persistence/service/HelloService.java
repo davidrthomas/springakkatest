@@ -14,6 +14,7 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import static akka.pattern.Patterns.ask;
 
@@ -36,6 +37,7 @@ public class HelloService {
 //                .props("greetingPerRequestActor"));
 //
 //
+
         ActorSelection greeter = system.actorSelection("akka://akka-spring-demo/user/$a/greetingServiceSupervisor");
         Future<Object> result = ask(greeter, new GreetingServiceSupervisorActor.Greet(name), timeout);
         return (String) Await.result(result, duration);
@@ -43,7 +45,7 @@ public class HelloService {
 
 
 
-    public String postEntity(String id, MyEntityActor.MyEntity entity) throws Exception {
+    public String postEntity(String id, MyEntityActor2.MyEntity entity) throws Exception {
 //        ActorRef entityActor = system.actorOf(SPRING_EXTENSION_PROVIDER.get(system)
 //                .props("myEntityActor"), id);
 //
@@ -54,9 +56,18 @@ public class HelloService {
         //Future<Object> result = ask(actorService.getRootActor(), new RootActor.MyEntityWithId(id, entity), timeout);
         //return (String) Await.result(result, duration);
         //ClusterSharding.get(system).start("MyEntity", Props.create(MyEntityActor.class), new Extractor());
+        IntStream.rangeClosed(0,10000).parallel().forEach(x -> doThing(String.valueOf(x), entity));
+        return doThing(id, entity);
+    }
+
+    private String doThing(String id, MyEntityActor2.MyEntity entity) {
         System.out.println("Got command");
         ActorRef counterRegion = ClusterSharding.get(system).shardRegion(PersistenceAppConfiguration.ShardingName);
         Future<Object> result = ask(counterRegion, new MyEntityWithId(id, entity), timeout);
-        return (String) Await.result(result, duration);
+        try {
+            return (String) Await.result(result, duration);
+        } catch (Exception e) {
+            return "";
+        }
     }
 }

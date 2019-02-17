@@ -4,20 +4,19 @@ import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.cluster.sharding.ClusterSharding;
 import akka.cluster.sharding.ShardRegion;
-import akka.persistence.journal.leveldb.SharedLeveldbStore;
+
 import com.david.thomas.persistence.actor.SharedStorageUsage;
-import com.david.thomas.persistence.service.HelloService;
-import com.typesafe.config.Config;
+
 import com.typesafe.config.ConfigFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.support.PropertiesLoaderUtils;
 
 import java.io.IOException;
-import java.util.Properties;
+
+import static com.david.thomas.persistence.SpringExtension.SPRING_EXTENSION_PROVIDER;
+
 
 @SpringBootApplication
 public class PersistenceAppConfiguration {
@@ -43,11 +42,14 @@ public class PersistenceAppConfiguration {
 
         ActorSystem system = ActorSystem.create(ActorSystemName,  ConfigFactory.load(env));
         //system.actorOf(Props.create(SharedLeveldbStore.class), "store");
-        system.actorOf(Props.create(SharedStorageUsage.class), "sharedStorage");
-        system.actorOf(Props.create(ClusterStatus.class));
-        ClusterSharding.get(system).start(ShardingName, Props.create(MyEntityActor.class), new Extractor());
+        if(env == "node.xml") {
+            system.actorOf(Props.create(SharedStorageUsage.class), "sharedStorage");
+            system.actorOf(Props.create(ClusterStatus.class));
+        }
 
-        SpringExtension.SPRING_EXTENSION_PROVIDER.get(system)
+        ClusterSharding.get(system).start(ShardingName, Props.create(MyEntityActor2.class), new Extractor());
+
+        SPRING_EXTENSION_PROVIDER.get(system)
                 .initialize(applicationContext);
         return system;
     }
@@ -67,7 +69,7 @@ public class PersistenceAppConfiguration {
         public Object entityMessage(Object message) {
             if (message instanceof MyEntityWithId) {
                 System.out.println("extracting my entity command");
-                return ( ((MyEntityWithId) message).getMyEntity());
+                return (MyEntityWithId) message;
             } else {
                 return message;
             }
@@ -76,6 +78,13 @@ public class PersistenceAppConfiguration {
         @Override
         public String shardId(Object message) {
             return "1";
+            //int numberOfShards = 20;
+/*
+            if (message instanceof MyEntityWithId) {
+                return String.valueOf(((MyEntityWithId) message).getIdInt() % numberOfShards);
+            } else {
+                return null;
+            }*/
         }
     }
 }
